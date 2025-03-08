@@ -220,10 +220,7 @@ class ChunkHandler {
         if (!this.chunks.inBounds(chunkX, chunkY))
             throw Error(`Trying to add sprite ${sprite} at chunk position (${chunkX} ${chunkY}), which is OOB`);
     
-        // DEBUG REMOVE
-        color = null;
         // get chunk canvas context
-        console.log(`Trying to prerender sprite w/ index ${sprite.sprite_index} at tile position (${x}, ${y}) with color: ${color}`);
         let chunkCtx = this.chunks.get(chunkX, chunkY).getContext('2d');
 
         // get sprite index
@@ -327,9 +324,9 @@ class GameState {
                 // add event listeners for player input
                 this.addEventListeners();
             }
-            this.spriteSheet.src = './sprites/sprite_sheet_16x16.png';
+            this.spriteSheet.src = 'sprites/sprite_sheet_16x16.png';
         }
-        this.terrainSpriteSheet.src = './sprites/terrain_sheet_16x16.png';        
+        this.terrainSpriteSheet.src = 'sprites/terrain_sheet_16x16.png';        
     }
 
     // draws game

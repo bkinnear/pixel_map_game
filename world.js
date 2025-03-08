@@ -162,13 +162,16 @@ class World {
 
             let tile = this.getTile(x, y);
             if (!this.occupiedSpawn[x][y] && tile.terrain.is_land && tile.terrain != core.terrain.mountains) {
+                console.log(`spawning on ${tile.terrain.name}, ${tile.terrain.is_land}`);
                 this._floodFillSpawn(x, y);
                 break;
             }
             
             // timeout search if it lasts too long
-            if (timeoutTicks-- === 0)
+            if (timeoutTicks-- === 0) {
+                console.log(`find spawn timeout`)
                 return null;
+            }
         }
 
         return new Point(x, y);
@@ -222,6 +225,9 @@ class World {
 
     // generates and spawns states
     _generateStates() {
+        // entries in form [state, capital_position]
+        let tempStates = new Array();
+
         for (let i = 0; i < this.numStates; i++) {
             // choose random civ
             let civilization = core.civilizations[randInt(core.civilizations.length)];
@@ -229,21 +235,28 @@ class World {
             // create new state
             let state = new State(`AI${i}`, civilization);
 
-            // add state to list
-            this.states.push(state);
-
             // find spawn location for capital city
             let p = this._findSpawn();
+
+            // add state to temp list
+            tempStates.push([state, p]);
 
             // regenerate map if no viable spawn found
             if (!p) {
                 this.generateTerrain();
                 return;
             }
+        }
+
+        tempStates.forEach((x) => {
+            const state = x[0];
+            const p = x[1];
+
+            this.states.push(state);
 
             // create capital at spawn
             this.createCity(p.x, p.y, state);
-        }
+        });
     }
     
     /*
