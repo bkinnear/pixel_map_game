@@ -1,4 +1,4 @@
-// Constains the engine game logic and data
+// contains the engine game logic and data
 
 "use strict";
 
@@ -92,7 +92,7 @@ function drawRect(x, y, w, h, c, outline=false) {
     ctx.strokeRect(x-game.camera.x, y-game.camera.y, w, h);
 }
 
-// holds all chunks (canvas with sprites predrawn to them)
+// holds all chunks (canvases with sprites predrawn to them)
 class ChunkHandler {
     constructor(world) {       
         // chunk map dimensions
@@ -101,8 +101,7 @@ class ChunkHandler {
         this.size = this.width * this.height;
 
         // initialize chunk data
-        // chunk entries are in format Array2D[x,y] = [canvas, sprites[]]
-        // sprite entries are in format [x, y, sprite, color]
+        // chunk entries are in format Array2D[x,y] = canvas
         this.chunks = new Array2D(
             this.width,
             this.height,
@@ -110,8 +109,18 @@ class ChunkHandler {
                 let newCanvas = document.createElement('canvas');
                 newCanvas.width = CHUNK_SIZE * TILE_SIZE;
                 newCanvas.height = CHUNK_SIZE * TILE_SIZE;
-                return [newCanvas, new Array()];
+                return newCanvas;
         });
+
+        // sprite lists by chunk position
+        // individual sprite entries are in format [x, y, sprite, color] where x, y are relative to chunk origin
+        this.chunkSprites = new Array2D(
+            this.width,
+            this.height,
+            () => {
+                return new Array();
+            }
+        );
     }
 
     // prerenders all chunks
@@ -129,13 +138,8 @@ class ChunkHandler {
         this._prerenderTerrain(game, x, y);
 
         // render sprites in chunk
-        for (let entry of this.chunks.get(x, y)[1]) {
-            let x = entry[0];
-            let y = entry[1];
-            let sprite = entry[2];
-            let color = entry[3];
-
-            this._prerenderSprite(game, x, y, sprite, color);
+        for (let entry of this.chunkSprites.get(x, y)) {
+            this._prerenderSprite(game, x, y, entry[0], entry[1], entry[2], entry[3]);
         }
 
         this.chunks[0]
@@ -146,7 +150,7 @@ class ChunkHandler {
         let chunkX = Math.floor(x / CHUNK_SIZE);
         let chunkY = Math.floor(y / CHUNK_SIZE);
         console.log(`Adding sprite to (${x}, ${y}) at chunk(${chunkX}, ${chunkY})`);
-        this.chunks.get(chunkX, chunkY)[1].push([x, y, sprite, color]);
+        this.chunkSprites.get(chunkX, chunkY).push([x % CHUNK_SIZE, y % CHUNK_SIZE, sprite, color]);
     }
 
     // draws chunks visible in rect formed from pixels (x, y, w, h)
@@ -166,7 +170,7 @@ class ChunkHandler {
                 if (!this.chunks.inBounds(chunkX, chunkY))
                     continue;
                 
-                let chunkCanvas = this.chunks.get(chunkX, chunkY)[0];
+                let chunkCanvas = this.chunks.get(chunkX, chunkY);
                 
                 ctx.drawImage(
                     chunkCanvas,
@@ -182,7 +186,7 @@ class ChunkHandler {
         // get chunk canvas context
         let offsetX = x * CHUNK_SIZE;
         let offsetY = y * CHUNK_SIZE;
-        let newContext = this.chunks.get(x, y)[0].getContext('2d');
+        let newContext = this.chunks.get(x, y).getContext('2d');
 
         // loop through all tiles in chunk
         for (let x = 0; x < CHUNK_SIZE; x++) {
@@ -210,32 +214,22 @@ class ChunkHandler {
         }
     }
 
-    // draws sprite to appropriate chunk canvas at tile (x, y)
-    _prerenderSprite(game, x, y, sprite, color=null) {
-        // TODO we already know sprite chunk from its chunk, draw to chunk directly instead of pulling it again
-        // get chunk position
-        let chunkX = Math.floor(x / CHUNK_SIZE);
-        let chunkY = Math.floor(y / CHUNK_SIZE);
-
-        // get local tile position within chunk
-        let localX = x % CHUNK_SIZE;
-        let localY = y % CHUNK_SIZE;
-
+    // draws sprite to appropriate chunk canvas at local tile (x, y) (relative to chunk origin)
+    _prerenderSprite(game, chunkX, chunkY, x, y, sprite, color=null) {
         // check for chunk out of range
         if (!this.chunks.inBounds(chunkX, chunkY))
-            throw Error(`Trying to add sprite ${sprite} at chunk position (${chunkX} ${chunkY}), tile position (${x}, ${y}). Out of bounds`);
+            throw Error(`Trying to add sprite ${sprite} at chunk position (${chunkX} ${chunkY}), which is OOB`);
     
         // DEBUG REMOVE
         color = null;
         // get chunk canvas context
         console.log(`Trying to prerender sprite w/ index ${sprite.sprite_index} at tile position (${x}, ${y}) with color: ${color}`);
-        let chunkCtx = this.chunks.get(chunkX, chunkY)[0].getContext('2d');
+        let chunkCtx = this.chunks.get(chunkX, chunkY).getContext('2d');
 
         // get sprite index
-        let index = sprite.sprite_index;
+        const index = sprite.sprite_index;
 
         if (!color) {
-            console.log(`Drawing spr w/out color`);
             // draw sprite to chunk context
             chunkCtx.drawImage(
                 game.spriteSheet, 
@@ -243,8 +237,8 @@ class ChunkHandler {
                 TILE_SIZE*index[1], 
                 TILE_SIZE, 
                 TILE_SIZE, 
-                localX*TILE_SIZE, 
-                localY*TILE_SIZE, 
+                x*TILE_SIZE, 
+                y*TILE_SIZE, 
                 TILE_SIZE, 
                 TILE_SIZE
             );
@@ -286,8 +280,8 @@ class ChunkHandler {
             // draw recolored sprite to chunk context
             chunkCtx.drawImage(
                 newCanvas,
-                localX*TILE_SIZE, 
-                localY*TILE_SIZE
+                x*TILE_SIZE, 
+                y*TILE_SIZE
             );
         }
     }
@@ -324,11 +318,11 @@ class GameState {
 
         // load terrain sprite sheet
         this.terrainSpriteSheet.onload = () => {
-            // prerender all terrain for quick drawing
-            this.chunks.prerenderAll(this);
 
             // load default color state sprite sheet
             this.spriteSheet.onload = () => {
+                // prerender all terrain for quick drawing
+                this.chunks.prerenderAll(this);
 
                 // add event listeners for player input
                 this.addEventListeners();

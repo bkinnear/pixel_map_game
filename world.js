@@ -88,7 +88,7 @@ class World {
         return this.tiles[this.pointToIndex(x, y)];
     }
 
-    // proceedurally generates world using Perlin noise
+    // procedurally generates world using Perlin noise
     generateTerrain() {
         let freq = Math.pow(2, core.world_gen.scale);
         let elevationGrid = Array(this.width*this.height).fill(0); // elevation values
@@ -138,6 +138,7 @@ class World {
     }
 
     // returns valid spawn location for a new state
+    // returns null if no valid location found within timeout
     _findSpawn() {
         let x = 0;
         let y = 0;
