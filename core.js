@@ -93,8 +93,8 @@ const core = {
     },
     world_gen: {
         scale: 8,
-        width: 2500,
-        height: 2500,
+        width: 500,
+        height: 500,
         max_precipitation: 3,
         max_elevation: 10,
         min_spawn_distance: 20,
