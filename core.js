@@ -92,7 +92,7 @@ const core = {
         }
     },
     world_gen: {
-        scale: 7,
+        scale: 8,
         width: 100,
         height: 100,
         max_precipitation: 3,

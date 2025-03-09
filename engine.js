@@ -299,6 +299,9 @@ class GameState {
         this.game_speed = 0;
         this.setGameSpeed(this.game_speed);
 
+        // loading screen image
+        this.loadingScreenImage = new Image();
+
         // terrain sprite sheet
         this.terrainSpriteSheet = new Image();
 
@@ -307,26 +310,66 @@ class GameState {
 
         // main sprite sheet
         this.spriteSheet = new Image();
+
+        // queue of callbacks to load resources
+        this.resourceQueue = new Array(0);
+        this.numResourcesLoaded = 0;
     }
 
+    // queues resource for loading and sets onload callback
+    _queueResource(res, callback) {
+        this.resourceQueue.push(callback);
+        res.onload = () => {
+            this.numResourcesLoaded++;
+        }
+    }
+
+    // loads all queued resources, then calls callback
+    _loadResources(callback) {
+        const numResources = this.resourceQueue.length;
+        this.numResourcesLoaded = 0;
+
+        while (this.resourceQueue.length > 0) {
+            this.resourceQueue.pop()();
+        }
+
+        let checkLoading = setInterval(() => {
+            if (this.numResourcesLoaded === numResources) {
+                clearInterval(checkLoading);
+                callback();
+            }
+        }, 100);
+    }
+
+    // loads resources and inital game state
     load() {
-        // generate world terrain
-        this.world.generateTerrain();
+        // first load loading screen
+        this._queueResource( this.loadingScreenImage, ()=>{
+            this.loadingScreenImage.src = 'sprites/loading_screen.png';
+        });
 
-        // load terrain sprite sheet
-        this.terrainSpriteSheet.onload = () => {
+        this._loadResources( () => {
+            ctx.drawImage(this.loadingScreenImage, 0, 0);
 
-            // load default color state sprite sheet
-            this.spriteSheet.onload = () => {
+            this._queueResource( this.terrainSpriteSheet, ()=>{
+                this.terrainSpriteSheet.src = 'sprites/terrain_sheet_16x16.png';
+            });
+
+            this._queueResource( this.spriteSheet, ()=>{
+                this.spriteSheet.src = 'sprites/sprite_sheet_16x16.png';
+            });
+
+            this._loadResources( () => {
+                // generate world terrain
+                this.world.generateTerrain();
+
                 // prerender all terrain for quick drawing
                 this.chunks.prerenderAll(this);
 
                 // add event listeners for player input
                 this.addEventListeners();
-            }
-            this.spriteSheet.src = 'sprites/sprite_sheet_16x16.png';
-        }
-        this.terrainSpriteSheet.src = 'sprites/terrain_sheet_16x16.png';        
+            });
+        });
     }
 
     // draws game
