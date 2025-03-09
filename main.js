@@ -1,7 +1,6 @@
 let game = new GameState();
 
-// load game data
-game.load();
+
 
 // main loop
 function update() {
@@ -35,8 +34,10 @@ function update() {
     ctx.restore();
 }
 
-// start the main loop after letting it load for .25 secs
-// TODO implement proper loading
-setTimeout(() => {
+// start the main loop after loading
+function startMainLoop() {
     setInterval(update, 17); // 33ms => 30.3fps, 17ms => 58.8fps (ends up running around 59-60FPS)
-}, 250);
+}
+
+// load game data then start main loop
+game.load(startMainLoop);

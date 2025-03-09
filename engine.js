@@ -85,6 +85,7 @@ function drawRect(x, y, w, h, c, outline=false) {
     if (!outline) {
         ctx.fillStyle = c;
         ctx.fillRect(x-game.camera.x, y-game.camera.y, w, h);
+        return;
     }
     
     // draw border
@@ -341,15 +342,26 @@ class GameState {
         }, 100);
     }
 
-    // loads resources and inital game state
-    load() {
+    // changes loading text to specified message, renders screen, then calls callback
+    updateLoadingText(message, callback) {
+        drawRect(32, canvas.height-64, canvas.width-32, 64, 'black', false);
+        ctx.font = `40px Verdana`;
+        ctx.fillStyle = 'white';
+        ctx.fillText(message, 32, canvas.height-32);
+        requestAnimationFrame(callback);
+    }
+
+    // loads resources and inital game state then calls callback
+    load(callback) {
         // first load loading screen
         this._queueResource( this.loadingScreenImage, ()=>{
             this.loadingScreenImage.src = 'sprites/loading_screen.png';
         });
 
         this._loadResources( () => {
+            // draw loading screen
             ctx.drawImage(this.loadingScreenImage, 0, 0);
+            this.updateLoadingText('Loading resources', ()=>{});
 
             this._queueResource( this.terrainSpriteSheet, ()=>{
                 this.terrainSpriteSheet.src = 'sprites/terrain_sheet_16x16.png';
@@ -360,14 +372,21 @@ class GameState {
             });
 
             this._loadResources( () => {
-                // generate world terrain
-                this.world.generateTerrain();
-
-                // prerender all terrain for quick drawing
-                this.chunks.prerenderAll(this);
-
-                // add event listeners for player input
-                this.addEventListeners();
+                this.updateLoadingText('Generating world', ()=>{
+                    setTimeout(() => {
+                        // generate world terrain
+                        this.world.generateTerrain();
+    
+                        // prerender all terrain for quick drawing
+                        this.chunks.prerenderAll(this);
+    
+                        // add event listeners for player input
+                        this.addEventListeners();
+    
+                        // done loading, call callback
+                        callback();
+                    }, 1);
+                });
             });
         });
     }
