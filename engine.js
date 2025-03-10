@@ -13,7 +13,8 @@ ctx.imageSmoothingEnabled = false;
 const TILE_SIZE = 16;
 
 // chunk size in tiles
-const CHUNK_SIZE = Math.floor(canvas.width / TILE_SIZE) + 1;// Math.floor(canvas.height/TILE_SIZE/2) + 1;
+const CHUNK_SIZE = 80;//Math.floor(canvas.width / TILE_SIZE) + 1; // Math.floor(canvas.height/TILE_SIZE/2) + 1;
+
 // chunk size in pixels
 const CHUNK_PIXEL_SIZE = CHUNK_SIZE * TILE_SIZE;
 
@@ -63,14 +64,21 @@ class Camera {
         game.camera.scale *= factor;
         ctx.scale(factor, factor);
 
+        console.log(`cam @ (${this.x}, ${this.y}) scaled by factor ${factor} to scale ${this.scale}`);
+
         // move camera to recenter
         if (factor > 1) {
-            this.x += 1 / this.scale * canvas.width / 2;
-            this.y += 1 / this.scale * canvas.height / 2;
+            this.x += Math.floor(1 / this.scale * canvas.width / 2);
+            this.x -= this.x % (1/this.scale);
+            this.y +=  Math.floor(1 / this.scale * canvas.height / 2);
+            this.y -= this.y % (1/this.scale);
         } else {
-            this.x -= 1 / oldScale * canvas.width / 2;
-            this.y -= 1 / oldScale * canvas.height / 2;
+            this.x -= Math.floor(1 / oldScale * canvas.width / 2); // TODO - recenter doesnt wokr on zoom out
+            this.x -= this.x % (1/this.scale);
+            this.y -= Math.floor(1 / oldScale * canvas.height / 2);
+            this.y -= this.y % (1/this.scale);
         }
+        console.log(`\tnew pos: (${this.x}, ${this.y})`)
     }
 
     // returns tile size at given camera scale
@@ -418,6 +426,10 @@ class GameState {
             ctx.fillText('Speed: ' + this.game_speed, 4, 48);
             // draw turn
             ctx.fillText('Turn: ' + this.world.turn, 4, 72);
+
+            // draw center point
+            ctx.fillStyle = 'red';
+            ctx.fillRect(canvas.width/2, canvas.height/2, 2, 2);
         }
 
         // draw bottom right GUI box
