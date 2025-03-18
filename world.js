@@ -98,16 +98,29 @@ class World {
         let seed = Math.random();
 
         // generate elevation values
-        noise.seed(seed);
+        noise.seed(1); // TODO change seed
         elevationGrid = elevationGrid.map((v, i) => {
             let p = this.indexToPoint(i);
+            
             let value = 0;
-            value += 1 * Math.abs(noise.perlin2(p.x / freq, p.y / freq)) * (core.world_gen.max_elevation + .49);
-            value += .5 * Math.abs(noise.perlin2(p.x / freq*2, p.y / freq*2)) * (core.world_gen.max_elevation + .49);
-            value += .25 * Math.abs(noise.perlin2(p.x / freq*4, p.y / freq*4)) * (core.world_gen.max_elevation + .49);
-            value += .125 * Math.abs(noise.perlin2(p.x / freq*8, p.y / freq*8)) * (core.world_gen.max_elevation + .49);
-            value /= (1 + .5 + .25 + .125);
-            return Math.round(value);
+            let continent_value = 0;
+
+            // determines whether this will be a continent 0 = sea, 1 = continent
+            let c_val = noise.simplex2(p.x / freq / 8, p.y / freq / 8);
+            c_val += .5 * noise.simplex2(p.x / freq / 4, p.y / freq / 4);
+            c_val += .25 * noise.simplex2(p.x / freq / 2, p.y / freq / 2);
+            c_val /= 1.75;
+            continent_value = Math.ceil(Math.min(Math.max(core.world_gen.sea_level + c_val, 0), 1));
+            
+            // elevation value above sea
+            value += core.world_gen.steepness * Math.max(noise.simplex2(p.x / freq / 4, p.y / freq / 4), 0);
+            value += core.world_gen.steepness * Math.max(noise.simplex2(p.x / freq * core.world_gen.roughness, p.y / freq * core.world_gen.roughness), 0);
+            value += core.world_gen.steepness * .5 * Math.max(noise.simplex2(p.x / freq * core.world_gen.roughness * 2, p.y / freq * core.world_gen.roughness * 2), 0);
+            value += core.world_gen.steepness * .25 * Math.max(noise.simplex2(p.x / freq * core.world_gen.roughness * 4, p.y / freq * core.world_gen.roughness * 4), 0);
+
+            return Math.min(Math.max(
+                Math.floor(continent_value * (value * core.world_gen.max_elevation))
+                , 0), core.world_gen.max_elevation-1);
         })
         
         // generate precipitation values
@@ -115,12 +128,12 @@ class World {
         precipitationGrid = precipitationGrid.map((v, i) => {
             let p = this.indexToPoint(i);
             let value = 0;
-            value += 1 * Math.abs(noise.perlin2(p.x / freq, p.y / freq)) * core.world_gen.max_precipitation;
-            value += .5 * Math.abs(noise.perlin2(p.x / freq*2, p.y / freq*2)) * core.world_gen.max_precipitation;
-            value += .25 * Math.abs(noise.perlin2(p.x / freq*4, p.y / freq*4)) * core.world_gen.max_precipitation;
-            value += .125 * Math.abs(noise.perlin2(p.x / freq*8, p.y / freq*8)) * core.world_gen.max_precipitation;
-            value /= (1 + .5 + .25 + .125);
-            return Math.round(value);
+            value += 3 * Math.max(noise.simplex2(p.x / freq, p.y / freq), 0);
+            value += 2 * Math.max(noise.simplex2(p.x / freq*2, p.y / freq*2), 0);
+            //console.log(`${value * core.world_gen.max_precipitation}`);
+            return Math.min(Math.max(
+                Math.floor(value * core.world_gen.max_precipitation)
+                , 0), core.world_gen.max_precipitation-1);
         })
         
         // run through every point in world and assign terrain based on generated grid values
@@ -128,6 +141,14 @@ class World {
             let p = precipitationGrid[i];
             let e = elevationGrid[i]; 
 
+            // check for terrain OOB of core.world_gen.terrain_grid
+            if (e < 0 || e >= core.world_gen.terrain_grid.length) {
+                throw Error(`elevation value ${e} not in core.world_gen.terrain_grid`);   
+            }
+            if (p < 0 || p >= core.world_gen.terrain_grid[e].length) {
+                throw Error(`precipitation value ${p} not in core.world_gen.terrain_grid`);
+            }
+                
             let tile = new Tile(core.terrain[core.world_gen.terrain_grid[e][p]]);
                         
             return tile;

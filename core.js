@@ -92,24 +92,25 @@ const core = {
         }
     },
     world_gen: {
-        scale: 8,
+        num_continents: 7, // number of continents
+        scale: 3, // size of world features
+        steepness: 1, // increases height of terrain elevation
+        roughness: .5, // increases variability of terrain elevation
+        sea_level: -.25, // increases sea level [-1, 1]
         width: 500,
         height: 500,
-        max_precipitation: 3,
-        max_elevation: 10,
+        max_precipitation: 4,
+        max_elevation: 7,
         min_spawn_distance: 20,
         // x = precipitation, y = elevation
         terrain_grid: [
-            ['sea', 'sea', 'sea'],
-            ['sea', 'sea', 'sea'],
-            ['sea', 'sea', 'sea'],
-            ['desert', 'grassland', 'grassland'],
-            ['steppe', 'grassland', 'forest'],
-            ['steppe', 'forest', 'forest'],
-            ['mountains', 'mountains', 'mountains'],
-            ['mountains', 'mountains', 'mountains'],
-            ['mountains', 'mountains', 'mountains'],
-            ['mountains', 'mountains', 'mountains']
+            ['sea', 'sea', 'sea', 'sea'],
+            ['desert', 'grassland', 'grassland', 'grassland'],
+            ['desert', 'grassland', 'grassland', 'grassland'],
+            ['steppe', 'grassland', 'grassland', 'forest'],
+            ['steppe', 'grassland', 'forest', 'forest'],
+            ['forest', 'forest', 'forest', 'forest'],
+            ['mountains', 'mountains', 'mountains', 'mountains']
         ]
     },
     default_bonuses: {
