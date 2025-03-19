@@ -15,6 +15,11 @@ function randInt(x) {
     return Math.floor(Math.random()*x);
 }
 
+// returns random integer in range [x, y)
+function randIntRange(x, y) {
+    return Math.floor(x + Math.random()*(y-x));
+}
+
 // 2d array 
 class Array2D {
     constructor(width, height, initializer = ()=>undefined) {
@@ -30,6 +35,10 @@ class Array2D {
 
     inBounds(x, y) {
         return (x >= 0 && y >= 0 && x < this.width & y < this.height);
+    }
+
+    set(x, y, v) {
+        this.array[this._posToIndex(x, y)] = v;
     }
     
     get(x, y) {
